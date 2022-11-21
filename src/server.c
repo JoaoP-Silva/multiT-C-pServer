@@ -13,18 +13,17 @@
 
 
 struct client_data{
-    int csock;
     int sock;
+    int* csockets;
     struct sockaddr_storage storage;
-    struct sockaddr_storage cstorage;
-    int *rack1, *rack2; 
+    int* equip;
 };
 
 
 void* client_thread(void* data){
 
     struct client_data* cdata = (struct client_data*) data;
-    struct sockaddr *caddr = (struct sockaddr *)(&cdata->cstorage);
+    struct sockaddr *caddr = (struct sockaddr *)(&cdata->storage);
 
     char caddrStr[BUFSIZ];
         addrToStr(caddr, caddrStr, BUFSIZ);
@@ -32,21 +31,9 @@ void* client_thread(void* data){
         char buf[BUFSIZ];
         while(1){
             memset(buf, 0, BUFSIZ);
-            size_t count = read(cdata->csock, buf, BUFSIZ - 1);
-            char* res = handleMessage(buf, cdata->rack1, cdata->rack2);
-            if(res == NULL){
-                strcpy(buf, "exit");
-                count = send(cdata->sock, buf, strlen(buf) + 1, 0);
-                close(cdata->csock);
-                printf("Closed connection\n");
+            read(cdata->sock, buf, BUFSIZ - 1);
+            if(handleMessage_S(buf, cdata->equip, cdata->csockets, cdata->sock)){
                 break;
-            }
-            memset(buf, 0, BUFSIZ);
-            strcpy(buf, res);
-            count = send(cdata->csock, buf, strlen(buf) + 1, 0);
-            if (count != strlen(buf) + 1)
-            {
-                logExit("Error at send message\n");
             }
         }
     pthread_exit(EXIT_SUCCESS);    
@@ -56,12 +43,11 @@ void* client_thread(void* data){
 
 int main(int argc, char **argv)
 {
-    //Inicializa a lista de equipamentos
-    int rack1[] = {0, 0, 0, 0};
-    int rack2[] = {0, 0, 0, 0};
+    int equip[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int csockets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     struct sockaddr_storage storage;
-    if (ServerSockInit(argv[1], argv[2], &storage) != 0)
+    if (ServerSockInit(argv[1], &storage) != 0)
     {
         logExit("Parameter error");
     }
@@ -104,13 +90,10 @@ int main(int argc, char **argv)
         }
 
         struct client_data* cdata = malloc(sizeof(*cdata));
-        cdata->csock = csock;
-        cdata->sock = s;
-        cdata->rack1 = rack1;
-        cdata->rack2 = rack2;
-
-        memcpy(&(cdata->cstorage), &cstorage, sizeof(cstorage));
-        memcpy(&(cdata->storage), &storage, sizeof(storage));
+        cdata->sock = csock;
+        cdata->csockets = csockets;
+        cdata->equip = equip;
+        memcpy(&(cdata->storage), &cstorage, sizeof(cstorage));
 
         pthread_t tid;
         pthread_create(&tid, NULL, client_thread, cdata);

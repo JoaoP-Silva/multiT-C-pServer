@@ -11,11 +11,11 @@
 #define BUFSZ 1024
 
 
-int equip = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
 
 int main(int argc, char **argv)
 {
+    int equip[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int id = -1;
 
     struct sockaddr_storage storage;
     if (addrParse(argv[1], argv[2], &storage) != 0)
@@ -42,28 +42,20 @@ int main(int argc, char **argv)
     memset(buf, 0, BUFSIZ);
     snprintf(buf, BUFSIZ, "01");
     send(s, buf, strlen(buf) + 1, 0);
-
+    if(handleMessage_C(buf, equip, s, &id)){
+        logExit("Connection error.\n");
+    }
+    
     while(1){
+        //Wait for keybord command
+        if(readInput(s, id, equip)){
+            continue;
+        }
         //Wait server response
         int count; unsigned total = 0;
         count = read(s, buf + total, BUFSIZ - total);
         total += count;
-        handleMessage_C(buf, equip);
-
-        memset(buf, 0, BUFSIZ);
-        fgets(buf, BUFSIZ, stdin);
-        char closebuf[BUFSIZ];
-        memset(closebuf, 0, BUFSIZ);
-        strcpy(closebuf, buf);
-        size_t count = send(s, buf, strlen(buf) + 1, 0);
-        if (count != strlen(buf) + 1)
-        {
-            logExit("Error at send message\n");
-        }
-        if(strcmp(closebuf, "exit") == 0){
-            close(s);
-            exit(EXIT_SUCCESS);
-        }
+        handleMessage_C(buf, equip, s, &id);
     }
     
 }
