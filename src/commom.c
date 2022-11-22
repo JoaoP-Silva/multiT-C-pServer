@@ -129,11 +129,11 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
             if(sub == NULL){return 0;}
             int destId = atoi(sub);
             if(!equipments[originId - 1]){
-                printf("equipment %d not found", originId);
+                printf("equipment %d not found\n", originId);
                 sendError(2, thisSocket);
             }
             else if(!equipments[destId - 1]){
-                printf("equipment %d not found", destId);
+                printf("equipment %d not found\n", destId);
                 sendError(3, thisSocket);
             }
             else{
