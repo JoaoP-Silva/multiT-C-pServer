@@ -409,13 +409,17 @@ int readInput(int socket, int id, int* equip){
             sub = strtok(NULL, " ");
         }
         int reqId = atoi(sub);
-        memset(buf, 0, BUFSIZ);
-        snprintf(buf, sizeof(buf), "05 %d %d", id, reqId);
-        send(socket, buf, strlen(buf) + 1, 0);
+        if(reqId == id){
+            printf("Wrong id request.\n");
+        }else{
+            memset(buf, 0, BUFSIZ);
+            snprintf(buf, sizeof(buf), "05 %d %d", id, reqId);
+            send(socket, buf, strlen(buf) + 1, 0);
+        }
+        
     }
     else{
         printf("Unknown command\n");
-        logExit("Input");
     }
     return 0;
 }

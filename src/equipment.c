@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     char addrStr[BUFSIZ];
     addrToStr(addr, addrStr, BUFSIZ);
-    printf("Connected to %s\n", addrStr);
+    //printf("Connected to %s\n", addrStr);
     char buf[BUFSIZ];
     memset(buf, 0, BUFSIZ);
     snprintf(buf, BUFSIZ, "01");
