@@ -377,7 +377,7 @@ void handleError(int errId){
         break;
 
     case 4:
-        printf("Equipment limit exceeded");
+        printf("Equipment limit exceeded\n");
         break;
         
     default:
