@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 void logExit(const char *msg);
 
@@ -23,7 +24,7 @@ int addEquip(int* equipaments, int* csockets, int thisSocket);
 
 int removeEquip(int id, int* equipaments, int* csockets);
 
-void sendToAll(char* buf, int* equipments,int* csockets, int id);
+void sendToAll(char* buf, int* equipments,int* csockets);
 
 void listEquips(int* equipaments, int thisSocket);
 
@@ -38,3 +39,5 @@ void handleError(int errId);
 int readInput(int socket, int id, int* equip);
 
 void listMyEquips(int* equips);
+
+int removeEquip_C(int id, int* equipments);

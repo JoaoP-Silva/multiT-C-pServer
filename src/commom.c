@@ -92,7 +92,7 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
             if(r){
                 printf("Equipment %d added\n", r);
                 snprintf(buf, sizeof(buf), "03 %d", r);
-                sendToAll(buf, equipments,csockets, r);
+                sendToAll(buf, equipments,csockets);
                 memset(buf, 0, BUFSIZ);
                 snprintf(buf, sizeof(buf), "03 _ %d", r);
                 send(thisSocket, buf, strlen(buf) + 1, 0);
@@ -111,11 +111,10 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
             if(r){
                 snprintf(buf, sizeof(buf), "08 01:Success");
                 send(thisSocket, buf, strlen(buf) + 1, 0);
-                printf("equipment IdEq %d removed\n", id);
+                printf("equipment %d removed\n", id);
                 memset(buf, 0, BUFSIZ);
-                snprintf(buf, sizeof(buf), "02 %d", r);
-                sendToAll(buf, equipments,csockets, id);
-                send(thisSocket, buf, strlen(buf) + 1, 0);
+                snprintf(buf, sizeof(buf), "02 %d", id);
+                sendToAll(buf, equipments,csockets);
                 return 1;
             }else{
                 sendError(1, thisSocket);
@@ -130,11 +129,11 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
             if(sub == NULL){return 0;}
             int destId = atoi(sub);
             if(!equipments[originId - 1]){
-                printf("equipment IdEq %d not found", originId);
+                printf("equipment %d not found", originId);
                 sendError(2, thisSocket);
             }
             else if(!equipments[destId - 1]){
-                printf("equipment IdEq %d not found", destId);
+                printf("equipment %d not found", destId);
                 sendError(3, thisSocket);
             }
             else{
@@ -153,11 +152,11 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
             if(sub == NULL){return 0;}
             int destId = atoi(sub);
             if(!equipments[originId - 1]){
-                printf("equipment IdEq %d not found", originId);
+                printf("equipment %d not found", originId);
                 sendError(2, thisSocket);
             }
             else if(!equipments[destId - 1]){
-                printf("equipment IdEq %d not found", destId);
+                printf("equipment %d not found", destId);
                 sendError(3, thisSocket);
             }
             else{
@@ -168,9 +167,6 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
                 int destSocket = csockets[destId - 1];
                 send(destSocket, buf, strlen(buf) + 1, 0);
             }
-        }
-        else if(strcmp(sub, "09")== 0){
-            listEquips(equipments, thisSocket);
         }
         else{
             printf("Unknown instruction\n");
@@ -208,9 +204,9 @@ int removeEquip(int id, int* equipments, int*csockets){
 }
 
 //Send a message to all clients connected
-void sendToAll(char* buf, int* equipments,int* csockets, int id){
+void sendToAll(char* buf, int* equipments,int* csockets){
     for(int i =0; i< 10; i++){
-        if(equipments[i] && i!= id -1){
+        if(equipments[i]){
             send(csockets[i], buf, strlen(buf) + 1, 0);
         }
     }
@@ -266,8 +262,22 @@ int handleMessage_C(char* data, int* equipments, int socket, int* id){
     memset(buf, 0, BUFSIZ);
 
     if((sub = strtok(data, " "))!= NULL){
+        //REQ_RM
+        if(strcmp(sub, "02")== 0){
+            sub = strtok(NULL, " ");
+            if(sub == NULL){return 0;}
+            int id = atoi(sub);
+            int r = removeEquip_C(id, equipments);
+            if(r){
+                printf("equipment %d removed\n", id);
+                memset(buf, 0, BUFSIZ);
+                return 1;
+            }else{
+                printf("Equipment not found on client database\n");
+            }
+        }
         //RES_ADD
-        if(strcmp(sub, "03")== 0){
+        else if(strcmp(sub, "03")== 0){
             sub = strtok(NULL, " ");
             if(sub == NULL){return 0;}
             char* isNew = sub;
@@ -325,7 +335,7 @@ int handleMessage_C(char* data, int* equipments, int socket, int* id){
                 sub = strtok(NULL, " ");
                 if(sub == NULL){return 0;}
                 float val = atof(sub);
-                printf("Value from %d : %f\n", originId, val);
+                printf("Value from %d : %.2f\n", originId, val);
             }
         }
         else if(strcmp(sub, "07")== 0){
@@ -344,6 +354,7 @@ int handleMessage_C(char* data, int* equipments, int socket, int* id){
 
 //Returns a two places decimal random number between 0 and 10
 float genRandValue(){
+    srand(time(NULL));
     float val = ((float)rand()/(float)(RAND_MAX)) * 10;
     val = (val * 100) / 100;
     return val;
@@ -385,13 +396,11 @@ int readInput(int socket, int id, int* equip){
         memset(buf, 0, BUFSIZ);
         snprintf(buf, sizeof(buf), "02 %d", id);
         send(socket, buf, strlen(buf) + 1, 0);
+        sleep(1.0);
         close(socket);
-        exit(EXIT_SUCCESS);
+        return 1;
     }
     else if(strcmp(buf, "list equipment\n") == 0){
-        memset(buf, 0, BUFSIZ);
-        snprintf(buf, sizeof(buf), "09");
-        send(socket, buf, strlen(buf) + 1, 0);
         listMyEquips(equip);
     }
     else if(strstr(buf, "request information from") != NULL){
@@ -406,7 +415,7 @@ int readInput(int socket, int id, int* equip){
     }
     else{
         printf("Unknown command\n");
-        return 1;
+        logExit("Input");
     }
     return 0;
 }
@@ -419,4 +428,14 @@ void listMyEquips(int* equips){
         }
     }
     printf("\n");
+}
+
+//Remove a equipment from client database
+int removeEquip_C(int id, int* equipments){
+    if(equipments[id - 1]){
+        equipments[id - 1] = 0;
+        return 1;
+    }else{
+        return 0;
+    }
 }

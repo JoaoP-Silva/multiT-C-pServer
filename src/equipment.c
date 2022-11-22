@@ -7,9 +7,39 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define BUFSZ 1024
 
+struct eqdata
+{
+    int* id;
+    int* equip;
+    int socket;
+};
+
+void* equip_thread(void* data){
+    struct eqdata* eqdata = (struct eqdata*) data;
+    char buf[BUFSIZ];
+    while(1){
+        memset(buf, 0, BUFSIZ);
+        recv(eqdata->socket, buf, BUFSIZ, 0);
+        char aux[BUFSIZ];
+        int cpyB = 0, cpyA = 0;
+        memset(aux, 0, BUFSIZ);
+
+        while(buf[cpyB] != '\0' || buf[cpyB + 1] != '\0'){
+            while(buf[cpyB] != '\0'){
+            memcpy(aux + cpyA, buf + cpyB, 1);
+            cpyB++; cpyA++;
+            }   
+            handleMessage_C(aux, eqdata->equip, eqdata->socket, eqdata->id);
+            memset(aux, 0, BUFSIZ);
+            cpyB++; cpyA = 0;
+        }
+    }
+    
+}
 
 
 int main(int argc, char **argv)
@@ -57,24 +87,22 @@ int main(int argc, char **argv)
         memset(aux, 0, BUFSIZ);
         cpyB++; cpyA = 0;
     }
+
+    struct eqdata* edata = malloc(sizeof(*edata));
+    edata->equip = equip;
+    edata->id = &id;
+    edata->socket = s;
+
+    pthread_t tid;
+    pthread_create(&tid, NULL, equip_thread, edata);
     while(1){
         memset(buf, 0, BUFSIZ);
         memset(aux, 0, BUFSIZ);
         cpyB = 0, cpyA = 0;
         //Wait for keybord command
         if(readInput(s, id, equip)){
-            continue;
-        }
-        //Wait server response
-        recv(s, buf, BUFSIZ, 0);
-        while(buf[cpyB] != '\0' || buf[cpyB + 1] != '\0'){
-            while(buf[cpyB] != '\0'){
-                memcpy(aux + cpyA, buf + cpyB, 1);
-                cpyB++; cpyA++;
-            }   
-            handleMessage_C(aux, equip, s, &id);
-            memset(aux, 0, BUFSIZ);
-            cpyB++; cpyA = 0;
+            break;
         }
     }
+    return 0;
 }

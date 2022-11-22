@@ -27,7 +27,7 @@ void* client_thread(void* data){
 
     char caddrStr[BUFSIZ];
         addrToStr(caddr, caddrStr, BUFSIZ);
-        printf("Connection from %s\n", caddrStr);
+        //printf("Connection from %s\n", caddrStr);
         char buf[BUFSIZ];
         while(1){
             memset(buf, 0, BUFSIZ);
