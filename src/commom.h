@@ -23,7 +23,7 @@ int addEquip(int* equipaments, int* csockets, int thisSocket);
 
 int removeEquip(int id, int* equipaments, int* csockets);
 
-void sendToAll(char* buf, int* equipments,int* csockets);
+void sendToAll(char* buf, int* equipments,int* csockets, int id);
 
 void listEquips(int* equipaments, int thisSocket);
 

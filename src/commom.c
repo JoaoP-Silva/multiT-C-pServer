@@ -90,10 +90,11 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
         if(strcmp(sub, "01")== 0){
             int r = addEquip(equipments, csockets, thisSocket);
             if(r){
+                printf("Equipment %d added\n", r);
                 snprintf(buf, sizeof(buf), "03 %d", r);
-                sendToAll(buf, equipments,csockets);
+                sendToAll(buf, equipments,csockets, r);
                 memset(buf, 0, BUFSIZ);
-                snprintf(buf, sizeof(buf), "03 _%d", r);
+                snprintf(buf, sizeof(buf), "03 _ %d", r);
                 send(thisSocket, buf, strlen(buf) + 1, 0);
                 listEquips(equipments, thisSocket);
             }
@@ -113,7 +114,8 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
                 printf("equipment IdEq %d removed\n", id);
                 memset(buf, 0, BUFSIZ);
                 snprintf(buf, sizeof(buf), "02 %d", r);
-                sendToAll(buf, equipments,csockets);
+                sendToAll(buf, equipments,csockets, id);
+                send(thisSocket, buf, strlen(buf) + 1, 0);
                 return 1;
             }else{
                 sendError(1, thisSocket);
@@ -167,13 +169,16 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
                 send(destSocket, buf, strlen(buf) + 1, 0);
             }
         }
+        else if(strcmp(sub, "09")== 0){
+            listEquips(equipments, thisSocket);
+        }
         else{
             printf("Unknown instruction\n");
             return 0;
         }
     }else{
         printf("Unknown instruction\n");
-        return 0;
+        return 1;
     }
     return 0;
 }
@@ -181,7 +186,7 @@ int handleMessage_S(char* data, int* equipments, int* csockets, int thisSocket){
 //Adds a equipment to the database
 int addEquip(int* equipments, int* csockets, int thisSocket){
     for(int i = 0; i< 10; i++){ 
-        if(equipments[i] != -1){
+        if(!equipments[i]){
             equipments[i] = 1;
             csockets[i] = thisSocket;
             int id = i + 1;
@@ -203,9 +208,9 @@ int removeEquip(int id, int* equipments, int*csockets){
 }
 
 //Send a message to all clients connected
-void sendToAll(char* buf, int* equipments,int* csockets){
+void sendToAll(char* buf, int* equipments,int* csockets, int id){
     for(int i =0; i< 10; i++){
-        if(equipments[i]){
+        if(equipments[i] && i!= id -1){
             send(csockets[i], buf, strlen(buf) + 1, 0);
         }
     }
@@ -218,7 +223,7 @@ void listEquips(int* equipments, int thisSocket){
     cx = snprintf(buf, BUFSIZ, "04");
     for(int i =0; i < 10; i++){
         if(equipments[i]){
-            cx = snprintf(buf + cx, BUFSIZ - cx, " %d", i + 1);
+            cx += snprintf(buf + cx, BUFSIZ - cx, " %d", i + 1);
         }
     }
     send(thisSocket, buf, strlen(buf) + 1, 0);
@@ -265,13 +270,14 @@ int handleMessage_C(char* data, int* equipments, int socket, int* id){
         if(strcmp(sub, "03")== 0){
             sub = strtok(NULL, " ");
             if(sub == NULL){return 0;}
-            sub = strtok(NULL, "_");
-            if(sub == NULL){
+            char* isNew = sub;
+            isNew = strtok(NULL, "_");
+            if(isNew == NULL){
                 int newId = atoi(sub);
                 equipments[newId - 1] = 1;
                 printf("Equipment %d added\n", newId);
             }else{
-                *id = atoi(sub);
+                *id = atoi(isNew);
                 equipments[*id - 1] = 1;
                 printf("New Id: %d\n", *id);  
             }
@@ -283,6 +289,7 @@ int handleMessage_C(char* data, int* equipments, int socket, int* id){
             while(sub != NULL){
                 int newId = atoi(sub);
                 equipments[newId - 1] = 1;
+                sub = strtok(NULL, " ");
             }
         }
         //REQ_INF
@@ -373,14 +380,18 @@ int readInput(int socket, int id, int* equip){
     char buf[BUFSIZ];
     memset(buf, 0, BUFSIZ);
     fgets(buf, BUFSIZ, stdin);
-    if(strcmp(buf, "close connection") == 0){
+    
+    if(strcmp(buf, "close connection\n") == 0){
         memset(buf, 0, BUFSIZ);
         snprintf(buf, sizeof(buf), "02 %d", id);
         send(socket, buf, strlen(buf) + 1, 0);
         close(socket);
         exit(EXIT_SUCCESS);
     }
-    else if(strcmp(buf, "list equipment") == 0){
+    else if(strcmp(buf, "list equipment\n") == 0){
+        memset(buf, 0, BUFSIZ);
+        snprintf(buf, sizeof(buf), "09");
+        send(socket, buf, strlen(buf) + 1, 0);
         listMyEquips(equip);
     }
     else if(strstr(buf, "request information from") != NULL){
@@ -406,6 +417,6 @@ void listMyEquips(int* equips){
         if(equips[i]){
             printf("%d ", i+1);
         }
-        printf("\n");
     }
+    printf("\n");
 }

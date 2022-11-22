@@ -39,12 +39,12 @@ void* client_thread(void* data){
     pthread_exit(EXIT_SUCCESS);    
 }
 
+int equip[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int csockets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 int main(int argc, char **argv)
 {
-    int equip[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    int csockets[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     struct sockaddr_storage storage;
     if (ServerSockInit(argv[1], &storage) != 0)

@@ -42,20 +42,39 @@ int main(int argc, char **argv)
     memset(buf, 0, BUFSIZ);
     snprintf(buf, BUFSIZ, "01");
     send(s, buf, strlen(buf) + 1, 0);
-    if(handleMessage_C(buf, equip, s, &id)){
-        logExit("Connection error.\n");
+    memset(buf, 0, BUFSIZ);
+    recv(s, buf, BUFSIZ, 0);
+    char aux[BUFSIZ];
+    int cpyB = 0, cpyA = 0;
+    memset(aux, 0, BUFSIZ);
+
+    while(buf[cpyB] != '\0' || buf[cpyB + 1] != '\0'){
+        while(buf[cpyB] != '\0'){
+        memcpy(aux + cpyA, buf + cpyB, 1);
+        cpyB++; cpyA++;
+        }   
+        handleMessage_C(aux, equip, s, &id);
+        memset(aux, 0, BUFSIZ);
+        cpyB++; cpyA = 0;
     }
-    
     while(1){
+        memset(buf, 0, BUFSIZ);
+        memset(aux, 0, BUFSIZ);
+        cpyB = 0, cpyA = 0;
         //Wait for keybord command
         if(readInput(s, id, equip)){
             continue;
         }
         //Wait server response
-        int count; unsigned total = 0;
-        count = read(s, buf + total, BUFSIZ - total);
-        total += count;
-        handleMessage_C(buf, equip, s, &id);
+        recv(s, buf, BUFSIZ, 0);
+        while(buf[cpyB] != '\0' || buf[cpyB + 1] != '\0'){
+            while(buf[cpyB] != '\0'){
+                memcpy(aux + cpyA, buf + cpyB, 1);
+                cpyB++; cpyA++;
+            }   
+            handleMessage_C(aux, equip, s, &id);
+            memset(aux, 0, BUFSIZ);
+            cpyB++; cpyA = 0;
+        }
     }
-    
 }
